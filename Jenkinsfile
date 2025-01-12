@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        CUCUMBER_RESULTS = 'target/cucumber-report'
+        CUCUMBER_RESULTS = 'target/cucumber-report.json'
         CUCUMBER_HTML = 'target/cucumber-html-report.html'
     }
 
