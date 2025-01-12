@@ -2,13 +2,15 @@ pipeline {
     agent any
 
     environment {
-        ALLURE_RESULTS = 'allure-results'
-        ALLURE_REPORT = 'target/allure-report'
+        // Définir les variables pour les rapports Cucumber
+        CUCUMBER_JSON = 'target/cucumber-report.json'
+        CUCUMBER_HTML = 'target/cucumber-report.html'
     }
 
     stages {
         stage('Checkout') {
             steps {
+                // Récupérer le code source depuis le dépôt Git
                 checkout([$class: 'GitSCM', 
                     branches: [[name: '*/master']],
                     userRemoteConfigs: [[url: 'https://github.com/Marwa-Lakrab/project-automation.git']]
@@ -18,40 +20,41 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
+                // Installer les dépendances via Maven sans exécuter les tests
                 sh 'mvn clean install -DskipTests'
             }
         }
 
-        stage('Run Tests & Generate Reports') {
+        stage('Run Cucumber Tests') {
             steps {
-                sh 'mvn test -Dsurefire.useFile=false -Dallure.results.directory=${ALLURE_RESULTS}'
+                // Exécuter les tests Cucumber et générer les rapports JSON et HTML
+                sh """
+                    mvn test \
+                    -Dcucumber.options="--plugin json:${CUCUMBER_JSON} --plugin html:${CUCUMBER_HTML} --tags @click" 
+                """
             }
         }
 
-        stage('Generate Allure Report') {
+        stage('Publish Cucumber Report') {
             steps {
-                sh 'allure generate ${ALLURE_RESULTS} -c -o ${ALLURE_REPORT}'
+                // Publier les résultats du rapport Cucumber dans Jenkins
+                cucumber fileIncludePattern: '**/cucumber-report.json',
+                         jsonReportDirectory: 'target'
             }
         }
 
-        stage('Archive Artifacts') {
+        stage('Archive Reports') {
             steps {
-                script {
-                    if (fileExists("${ALLURE_RESULTS}")) {
-                        archiveArtifacts artifacts: "${ALLURE_RESULTS}/**"
-                    }
-                    if (fileExists("${ALLURE_REPORT}")) {
-                        archiveArtifacts artifacts: "${ALLURE_REPORT}/**"
-                    }
-                }
+                // Archiver les rapports JSON et HTML générés
+                archiveArtifacts artifacts: "${CUCUMBER_JSON}, ${CUCUMBER_HTML}", allowEmptyArchive: false
             }
         }
     }
 
     post {
         always {
-            junit 'target/surefire-reports/*.xml'
-            allure includeProperties: false, jdk: '', results: [[path: "${ALLURE_RESULTS}"]]
+            // Toujours publier les résultats des tests JUnit (même en cas d'échec)
+            junit '**/target/surefire-reports/*.xml'
         }
     }
 }
