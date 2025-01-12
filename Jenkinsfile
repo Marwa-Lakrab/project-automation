@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // Variables pour les rapports Cucumber
+        // Définir les variables pour les rapports Cucumber
         CUCUMBER_JSON = 'target/cucumber-report.json'
         CUCUMBER_HTML = 'target/cucumber-report.html'
     }
@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Récupération du code depuis le repository Git
+                // Récupérer le code source depuis le dépôt Git
                 checkout([$class: 'GitSCM', 
                     branches: [[name: '*/master']],
                     userRemoteConfigs: [[url: 'https://github.com/Marwa-Lakrab/project-automation.git']]
@@ -20,33 +20,32 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                // Installation des dépendances avec Maven sans exécuter les tests
+                // Installer les dépendances via Maven sans exécuter les tests
                 sh 'mvn clean install -DskipTests'
             }
         }
 
         stage('Run Cucumber Tests') {
             steps {
-                // Exécution des tests Cucumber avec Maven et génération des rapports JSON et HTML
+                // Exécuter les tests Cucumber et générer les rapports JSON et HTML
                 sh """
                     mvn test \
-                    -Dcucumber.plugin=json:${CUCUMBER_JSON} \
-                    -Dcucumber.plugin=html:${CUCUMBER_HTML}
+                    -Dcucumber.options="--plugin json:${CUCUMBER_JSON} --plugin html:${CUCUMBER_HTML} --tags @click" 
                 """
             }
         }
 
         stage('Publish Cucumber Report') {
             steps {
-                // Publication du rapport Cucumber dans Jenkins
-                cucumber fileIncludePattern: "${CUCUMBER_JSON}", 
-                         jsonReportDirectory: "target"
+                // Publier les résultats du rapport Cucumber dans Jenkins
+                cucumber fileIncludePattern: '**/cucumber-report.json',
+                         jsonReportDirectory: 'target'
             }
         }
 
         stage('Archive Reports') {
             steps {
-                // Archivage des rapports générés (JSON et HTML)
+                // Archiver les rapports JSON et HTML générés
                 archiveArtifacts artifacts: "${CUCUMBER_JSON}, ${CUCUMBER_HTML}", allowEmptyArchive: false
             }
         }
@@ -54,8 +53,8 @@ pipeline {
 
     post {
         always {
-            // Publication des résultats des tests unitaires (JUnit)
-            junit 'target/surefire-reports/*.xml'
+            // Toujours publier les résultats des tests JUnit (même en cas d'échec)
+            junit '**/target/surefire-reports/*.xml'
         }
     }
 }
