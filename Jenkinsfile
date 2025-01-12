@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        CUCUMBER_RESULTS = 'target/cucumber-report.json'
-        CUCUMBER_HTML = 'target/cucumber-html-report.html'
+        CUCUMBER_JSON = 'target/cucumber-report.json'
+        CUCUMBER_HTML = 'target/cucumber-report.html'
     }
 
     stages {
@@ -25,7 +25,12 @@ pipeline {
         stage('Run Cucumber Tests') {
             steps {
                 script {
-                    sh 'mvn test -Dcucumber.plugin=html:${CUCUMBER_HTML} -Dcucumber.plugin=json:${CUCUMBER_RESULTS}/cucumber.json'
+                    // Commande Maven pour exécuter les tests et générer JSON et HTML
+                    sh """
+                        mvn test \
+                        -Dcucumber.plugin=json:${CUCUMBER_JSON} \
+                        -Dcucumber.plugin=html:${CUCUMBER_HTML}
+                    """
                 }
             }
         }
@@ -33,17 +38,22 @@ pipeline {
         stage('Publish Cucumber Report') {
             steps {
                 script {
-                    // Utilisez le plugin Cucumber Reports de Jenkins
-                    cucumber fileIncludePattern: "${CUCUMBER_RESULTS}/cucumber.json", 
-                             jsonReportDirectory: "${CUCUMBER_RESULTS}"
+                    cucumber fileIncludePattern: "${CUCUMBER_JSON}", 
+                             jsonReportDirectory: "target"
                 }
+            }
+        }
+
+        stage('Archive Reports') {
+            steps {
+                archiveArtifacts artifacts: "${CUCUMBER_JSON}, ${CUCUMBER_HTML}", allowEmptyArchive: false
             }
         }
     }
 
     post {
         always {
-            junit 'target/surefire-reports/*.xml' // Assurez-vous que les rapports JUnit sont également archivés
+            junit 'target/surefire-reports/*.xml' // Résultats des tests unitaires
         }
     }
 }
