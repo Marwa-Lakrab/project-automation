@@ -12,7 +12,7 @@ import static io.cucumber.junit.CucumberOptions.SnippetType.CAMELCASE;
 
 /**
 * The @CucumberOptions Annotation is used to define the location of feature files, step definitions, reporting
-* integration..
+* integration...
 */
 @CucumberOptions(
 		features = {"src/spec/features"},
