@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        CUCUMBER_RESULTS = 'target/cucumber-reports'
+        CUCUMBER_RESULTS = 'target/cucumber-reports.json'
         CUCUMBER_HTML = 'target/cucumber-html-report.html'
     }
 
@@ -25,7 +25,7 @@ pipeline {
         stage('Run Cucumber Tests') {
             steps {
                 script {
-                    sh 'mvn test -Dcucumber.plugin=html:${CUCUMBER_HTML} -Dcucumber.plugin=json:${CUCUMBER_RESULTS}/cucumber.json'
+                    sh 'mvn test -Dcucumber.plugin=html:${CUCUMBER_HTML} -Dcucumber.plugin=json:${CUCUMBER_RESULTS}'
                 }
             }
         }
@@ -34,7 +34,7 @@ pipeline {
             steps {
                 script {
                     // Utilisez le plugin Cucumber Reports de Jenkins
-                    cucumber fileIncludePattern: "${CUCUMBER_RESULTS}/cucumber.json", 
+                    cucumber fileIncludePattern: "${CUCUMBER_RESULTS}", 
                              jsonReportDirectory: "${CUCUMBER_RESULTS}"
                 }
             }
